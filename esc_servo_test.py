@@ -1,34 +1,45 @@
-# test code(esc_servo_test.py)
-# result : servo working, motor not working
+# esc_servo_test.py
+# Result: servo + ESC test with safe shutdown on Ctrl+C
 
 import pigpio
 import time
 
+ESC_PIN = 13     # GPIO13 for ESC
+SERVO_PIN = 12   # GPIO12 for Servo
+
 pi = pigpio.pi()
 
-ESC_PIN = 13     # GPIO13 (ESC)
-SERVO_PIN = 12   # GPIO12 (Servo)
+try:
+    # Initialize
+    pi.set_servo_pulsewidth(ESC_PIN, 0)
+    pi.set_servo_pulsewidth(SERVO_PIN, 0)
+    time.sleep(0.5)
 
-# 초기화
-pi.set_servo_pulsewidth(ESC_PIN, 0)
-pi.set_servo_pulsewidth(SERVO_PIN, 0)
+    # Arm ESC
+    print("Arming ESC...")
+    pi.set_servo_pulsewidth(ESC_PIN, 1000)
+    time.sleep(1)
+    pi.set_servo_pulsewidth(ESC_PIN, 1500)
+    time.sleep(1)
 
-# ESC 암 (arming)
-pi.set_servo_pulsewidth(ESC_PIN, 1000)  # 최소 스로틀
-time.sleep(2)
-pi.set_servo_pulsewidth(ESC_PIN, 1500)  # 중간
-time.sleep(2)
+    # Servo test
+    print("Moving servo...")
+    pi.set_servo_pulsewidth(SERVO_PIN, 1000)
+    time.sleep(0.5)
+    pi.set_servo_pulsewidth(SERVO_PIN, 2000)
+    time.sleep(0.5)
+    pi.set_servo_pulsewidth(SERVO_PIN, 1500)
+    time.sleep(0.5)
 
-# Servo 테스트
-print("Moving servo...")
-pi.set_servo_pulsewidth(SERVO_PIN, 1000)  # 왼쪽
-time.sleep(1)
-pi.set_servo_pulsewidth(SERVO_PIN, 2000)  # 오른쪽
-time.sleep(1)
-pi.set_servo_pulsewidth(SERVO_PIN, 1500)  # 중간
-time.sleep(1)
+    # Hold state until user ends
+    input("Press Enter or Ctrl+C to stop...")
 
-# 정지
-pi.set_servo_pulsewidth(ESC_PIN, 0)
-pi.set_servo_pulsewidth(SERVO_PIN, 0)
-pi.stop()
+except KeyboardInterrupt:
+    print("\n[!] Ctrl+C received — stopping motors.")
+
+finally:
+    # Always stop on exit
+    pi.set_servo_pulsewidth(ESC_PIN, 0)
+    pi.set_servo_pulsewidth(SERVO_PIN, 0)
+    pi.stop()
+    print("✅ ESC and Servo stopped safely.")
